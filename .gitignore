@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# SQLite databases
+*.db
+
+# Docker
+docker-compose.override.yml
+
+# Rider
+.idea/
+
+# Build outputs
+publish/
+
+# temp
+tmp/
+temp/
