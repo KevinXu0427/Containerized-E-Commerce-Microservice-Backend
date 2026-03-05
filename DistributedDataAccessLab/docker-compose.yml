@@ -1,0 +1,56 @@
+services:
+
+  customerservice:
+    container_name: customerservice
+    build:
+      context: ./CustomerService/CustomerService.Api
+      dockerfile: Dockerfile
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./CustomerService/CustomerService.Api/Data:/app/Data
+
+  orderservice:
+    container_name: orderservice
+    build:
+      context: ./OrderService/OrderService.Api
+      dockerfile: Dockerfile
+    ports:
+      - "5002:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      CustomerServiceUrl: http://customerservice:8080
+      ProductServiceUrl: http://productservice:8080/
+      InventoryServiceUrl: http://inventoryservice:8080/
+    depends_on:
+      - customerservice
+      - productservice
+      - inventoryservice
+    volumes:
+      - ./OrderService/OrderService.Api/Data:/app/Data
+
+  productservice:
+    container_name: productservice
+    build:
+      context: ./ProductService/ProductService.Api
+      dockerfile: Dockerfile
+    ports:
+      - "5003:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./ProductService/ProductService.Api/Data:/app/Data
+
+  inventoryservice:
+    container_name: inventoryservice
+    build:
+      context: ./InventoryService/InventoryService.Api
+      dockerfile: Dockerfile
+    ports:
+      - "5004:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./InventoryService/InventoryService.Api/Data:/app/Data
