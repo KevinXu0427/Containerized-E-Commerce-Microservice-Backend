@@ -3,9 +3,11 @@ using ProductService.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var productDb = builder.Environment.IsDevelopment()
-    ? "Data Source=products.db"
-    : "Data Source=/app/Data/products.db";
+var productDb = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
+    ? "Data Source=/app/Data/products.db"
+    : builder.Environment.IsDevelopment()
+        ? "Data Source=products.db"
+        : "Data Source=/app/Data/products.db";
 
 builder.Services.AddDbContext<ProductDbContext>(options =>
     options.UseSqlite(productDb));

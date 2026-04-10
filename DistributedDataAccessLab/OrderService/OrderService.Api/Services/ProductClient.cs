@@ -1,15 +1,21 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace OrderService.Api.Services;
 
 public class ProductClient : IProductClient
 {
     private readonly HttpClient _httpClient;
-    public ProductClient(HttpClient httpClient) { _httpClient = httpClient; }
-
-    private sealed class ProductDto
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        public int Id { get; set; }
+        PropertyNameCaseInsensitive = true
+    };
+
+    public ProductClient(HttpClient httpClient) => _httpClient = httpClient;
+
+    private sealed class ProductPriceDto
+    {
         public decimal Price { get; set; }
     }
 
@@ -19,7 +25,7 @@ public class ProductClient : IProductClient
         if (res.StatusCode != HttpStatusCode.OK)
             return null;
 
-        var product = await res.Content.ReadFromJsonAsync<ProductDto>();
+        var product = await res.Content.ReadFromJsonAsync<ProductPriceDto>(JsonOptions);
         return product?.Price;
     }
 }

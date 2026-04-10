@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Api.Data;
+using ProductService.Api.DTOs;
 using ProductService.Api.Models;
 
 namespace ProductService.Api.Controllers;
@@ -16,48 +17,45 @@ public class ProductsController : ControllerBase
         _context = context;
     }
 
-    // GET /api/products
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IReadOnlyList<ProductResponse>>> GetAll()
     {
-        var products = await _context.Products.ToListAsync();
-        return Ok(products);
+        var list = await _context.Products
+            .Select(p => ToResponse(p))
+            .ToListAsync();
+        return Ok(list);
     }
 
-    // GET /api/products/{id}
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Product>> GetById(int id)
+    public async Task<ActionResult<ProductResponse>> GetById(int id)
     {
         var product = await _context.Products.FindAsync(id);
         if (product == null) return NotFound();
-        return Ok(product);
+        return Ok(ToResponse(product));
     }
 
-    // POST /api/products
     [HttpPost]
-    public async Task<IActionResult> Create(Product product)
+    public async Task<ActionResult<ProductResponse>> Create([FromBody] CreateProductRequest req)
     {
+        var product = new Product { Name = req.Name, Price = req.Price };
         await _context.Products.AddAsync(product);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToResponse(product));
     }
 
-    // PUT /api/products/{id}
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Product updated)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateProductRequest req)
     {
         var product = await _context.Products.FindAsync(id);
         if (product == null) return NotFound();
 
-        product.Name = updated.Name;
-        product.Price = updated.Price;
-
+        product.Name = req.Name;
+        product.Price = req.Price;
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-    // DELETE /api/products/{id}
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -68,4 +66,11 @@ public class ProductsController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
+    private static ProductResponse ToResponse(Product p) => new()
+    {
+        Id = p.Id,
+        Name = p.Name,
+        Price = p.Price
+    };
 }

@@ -12,18 +12,20 @@ public class InventoryClient : IInventoryClient
         _httpClient = httpClient;
     }
 
-    public async Task<bool> ReserveAsync(int productId, int quantity)
+    public async Task<InventoryReserveResult> ReserveAsync(int productId, int quantity)
     {
         var body = new { productId, quantity };
         var res = await _httpClient.PostAsJsonAsync("api/inventory/reserve", body);
 
-        // 200 OKz: reserved
-        if (res.StatusCode == HttpStatusCode.OK) return true;
+        if (res.StatusCode == HttpStatusCode.OK)
+            return InventoryReserveResult.Success;
 
-        // 409 Conflict: insufficient stock
-        if (res.StatusCode == HttpStatusCode.Conflict) return false;
+        if (res.StatusCode == HttpStatusCode.NotFound)
+            return InventoryReserveResult.NoInventoryRecord;
 
-        // 404 NotFound or others
-        return false;
+        if (res.StatusCode == HttpStatusCode.Conflict)
+            return InventoryReserveResult.InsufficientStock;
+
+        return InventoryReserveResult.InsufficientStock;
     }
 }

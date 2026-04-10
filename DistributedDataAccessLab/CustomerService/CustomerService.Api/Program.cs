@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var customersDb = builder.Environment.IsDevelopment()
-    ? "Data Source=customers.db"
-    : "Data Source=/app/Data/customers.db";
+var customersDb = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
+    ? "Data Source=/app/Data/customers.db"
+    : builder.Environment.IsDevelopment()
+        ? "Data Source=customers.db"
+        : "Data Source=/app/Data/customers.db";
     
 builder.Services.AddDbContext<CustomerDbContext>(options =>
     options.UseSqlite(customersDb));

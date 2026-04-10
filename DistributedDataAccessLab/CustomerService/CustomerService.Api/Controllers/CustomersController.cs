@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CustomerService.Api.Data;
+using CustomerService.Api.DTOs;
 using CustomerService.Api.Models;
 
 namespace CustomerService.Api.Controllers;
@@ -16,25 +17,34 @@ public class CustomersController : ControllerBase
         _context = context;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Customer>> GetById(int id)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<CustomerResponse>> GetById(int id)
     {
         var customer = await _context.Customers.FindAsync(id);
-
         if (customer == null)
             return NotFound();
 
-        return Ok(customer);
+        return Ok(ToResponse(customer));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(Customer customer)
+    public async Task<ActionResult<CustomerResponse>> Create([FromBody] CreateCustomerRequest req)
     {
+        var customer = new Customer
+        {
+            Name = req.Name,
+            Email = req.Email
+        };
         await _context.Customers.AddAsync(customer);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById),
-            new { id = customer.Id },
-            customer);
+        return CreatedAtAction(nameof(GetById), new { id = customer.Id }, ToResponse(customer));
     }
+
+    private static CustomerResponse ToResponse(Customer c) => new()
+    {
+        Id = c.Id,
+        Name = c.Name,
+        Email = c.Email
+    };
 }
