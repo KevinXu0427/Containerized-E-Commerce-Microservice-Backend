@@ -1,0 +1,15 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>E‑commerce lab</h1>
+<p class="lead">Blazor WebAssembly UI talking only to the <strong>API Gateway</strong> (<code>/gateway/…</code>).</p>
+
+<ul class="list-unstyled">
+    <li><a href="products">Products</a> — list and add products</li>
+    <li><a href="customers">Customers</a> — list and add customers</li>
+    <li><a href="inventory">Inventory</a> — list, lookup, set stock, reserve, release</li>
+    <li><a href="orders">Orders</a> — list and create orders (needs customer, product, and stock)</li>
+</ul>
+
+<p class="text-muted small">Gateway base URL is configured in <code>wwwroot/appsettings.json</code> (<code>Api:BaseUrl</code>). Use the <strong>http</strong> launch profile so the browser is not https-only while the gateway is http.</p>

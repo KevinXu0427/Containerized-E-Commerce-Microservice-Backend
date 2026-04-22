@@ -17,6 +17,21 @@ public class CustomersController : ControllerBase
         _context = context;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<CustomerResponse>>> GetAll()
+    {
+        var list = await _context.Customers
+            .OrderBy(c => c.Id)
+            .Select(c => new CustomerResponse
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Email = c.Email
+            })
+            .ToListAsync();
+        return Ok(list);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CustomerResponse>> GetById(int id)
     {

@@ -1,13 +1,7 @@
-# RabbitMQ: rabbitmq:3-management — ports 5672 (AMQP), 15672 (management UI)
-# If pull hangs: docker pull rabbitmq:3-management
-# If "name already in use": docker rm -f <container>
-# If .erlang.cookie eacces: docker compose down -v then up again (reset volume)
-
 services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    # Omit container_name to avoid clashing with other projects using name "rabbitmq"
     hostname: rabbitmq
     ports:
       - "5672:5672"

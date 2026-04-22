@@ -6,10 +6,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace ApiGateway.Swagger;
 
-/// <summary>
-/// Ocelot routes are handled by middleware and do not appear as controller actions; Swagger does not discover gateway forwards automatically.
-/// Microsoft.OpenApi 2.x types live in the <see cref="Microsoft.OpenApi"/> namespace (no separate Models / Any namespaces).
-/// </summary>
 public sealed class OcelotRoutesDocumentFilter : IDocumentFilter
 {
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
@@ -117,6 +113,8 @@ public sealed class OcelotRoutesDocumentFilter : IDocumentFilter
         Add("/gateway/orders/{id}/status", HttpMethod.Put, putStatus);
 
         // Customers
+        Add("/gateway/customers", HttpMethod.Get, Op("List customers", "Forwards to CustomerService `GET /api/customers`"));
+
         var postCust = Op("Create customer", "Forwards to CustomerService `POST /api/customers`");
         postCust.RequestBody = JsonBody("""{"name":"Alice","email":"a@example.com"}""");
         Add("/gateway/customers", HttpMethod.Post, postCust);
@@ -146,6 +144,8 @@ public sealed class OcelotRoutesDocumentFilter : IDocumentFilter
         Add("/gateway/products/{id}", HttpMethod.Delete, delProd);
 
         // Inventory
+        Add("/gateway/inventory", HttpMethod.Get, Op("List inventory rows", "Forwards to InventoryService `GET /api/inventory`"));
+
         var getInv = Op("Get inventory by product id", "Forwards to InventoryService `GET /api/inventory/{productId}`", notFound: true);
         getInv.Parameters = [invPid];
         Add("/gateway/inventory/{productId}", HttpMethod.Get, getInv);

@@ -5,9 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Controllers;
 
-/// <summary>
-/// Gateway-side BFF aggregation: combines order, customer, and product in one response (multiple downstream HTTP calls).
-/// </summary>
 [ApiController]
 [Route("api/gateway")]
 [Tags("Gateway")]

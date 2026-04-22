@@ -19,7 +19,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5001 }],
       "UpstreamPathTemplate": "/gateway/customers",
-      "UpstreamHttpMethod": [ "POST" ]
+      "UpstreamHttpMethod": [ "GET", "POST" ]
     },
     {
       "DownstreamPathTemplate": "/api/customers/{everything}",
@@ -41,6 +41,13 @@
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5003 }],
       "UpstreamPathTemplate": "/gateway/products/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/inventory",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5004 }],
+      "UpstreamPathTemplate": "/gateway/inventory",
+      "UpstreamHttpMethod": [ "GET" ]
     },
     {
       "DownstreamPathTemplate": "/api/inventory/{everything}",

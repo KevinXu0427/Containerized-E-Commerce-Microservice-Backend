@@ -1,0 +1,122 @@
+@page "/customers"
+@using Frontend.Models
+@using Frontend.Services
+@inject ApiService Api
+
+<PageTitle>Customers</PageTitle>
+
+<h3>Customers</h3>
+<p class="text-muted small">Gateway: <code>/gateway/customers</code></p>
+
+<h4 class="mt-4">Add customer</h4>
+<EditForm Model="newCustomer" OnValidSubmit="AddCustomerAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Name</label>
+            <InputText class="form-control" @bind-Value="newCustomer.Name" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="newCustomer.Email" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">@(isSaving ? "Saving…" : "Add")</button>
+        </div>
+    </div>
+</EditForm>
+@if (saveError is not null)
+{
+    <p class="text-danger mt-2" role="alert">@saveError</p>
+}
+
+@if (loadError is not null)
+{
+    <p class="text-danger mt-4" role="alert">@loadError</p>
+}
+else if (customers == null)
+{
+    <p class="mt-4">Loading...</p>
+}
+else
+{
+    <h4 class="mt-4">All customers</h4>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr><th>Id</th><th>Name</th><th>Email</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in customers)
+                {
+                    <tr>
+                        <td>@c.Id</td>
+                        <td>@c.Name</td>
+                        <td>@c.Email</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (customers.Count == 0)
+    {
+        <p class="text-muted">No customers yet.</p>
+    }
+}
+
+@code {
+    private List<CustomerDto>? customers;
+    private string? loadError;
+    private string? saveError;
+    private readonly CreateCustomerRequest newCustomer = new();
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        loadError = null;
+        try
+        {
+            customers = await Api.GetCustomersAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            loadError = $"Unexpected JSON: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+    }
+
+    private async Task AddCustomerAsync()
+    {
+        saveError = null;
+        isSaving = true;
+        try
+        {
+            await Api.CreateCustomerAsync(newCustomer);
+            newCustomer.Name = string.Empty;
+            newCustomer.Email = string.Empty;
+            await ReloadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            saveError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            saveError = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

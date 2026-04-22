@@ -21,6 +21,21 @@ public class InventoryController : ControllerBase
         _stockPublisher = stockPublisher;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<InventoryItemResponse>>> GetAll()
+    {
+        var list = await _context.Inventory
+            .OrderBy(x => x.ProductId)
+            .Select(x => new InventoryItemResponse
+            {
+                Id = x.Id,
+                ProductId = x.ProductId,
+                Stock = x.Stock
+            })
+            .ToListAsync();
+        return Ok(list);
+    }
+
     [HttpGet("{productId:int}")]
     public async Task<ActionResult<InventoryItemResponse>> GetByProductId(int productId)
     {

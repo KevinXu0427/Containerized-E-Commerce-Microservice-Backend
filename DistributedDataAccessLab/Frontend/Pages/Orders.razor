@@ -1,0 +1,140 @@
+@page "/orders"
+@using Frontend.Models
+@using Frontend.Services
+@inject ApiService Api
+
+<PageTitle>Orders</PageTitle>
+
+<h3>Orders</h3>
+<p class="text-muted small">Gateway: <code>/gateway/orders</code>. Creating an order reserves inventory via Order Service.</p>
+
+<h4 class="mt-4">Create order</h4>
+<EditForm Model="newOrder" OnValidSubmit="CreateOrderAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label class="form-label">Customer id</label>
+            <InputNumber class="form-control" @bind-Value="newOrder.CustomerId" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Product id</label>
+            <InputNumber class="form-control" @bind-Value="newOrder.ProductId" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Quantity</label>
+            <InputNumber class="form-control" @bind-Value="newOrder.Quantity" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Discount %</label>
+            <InputNumber class="form-control" @bind-Value="newOrder.DiscountPercent" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100" disabled="@isSaving">@(isSaving ? "…" : "Create")</button>
+        </div>
+    </div>
+</EditForm>
+@if (saveError is not null)
+{
+    <p class="text-danger mt-2" role="alert">@saveError</p>
+}
+
+@if (loadError is not null)
+{
+    <p class="text-danger mt-4" role="alert">@loadError</p>
+}
+else if (orders == null)
+{
+    <p class="mt-4">Loading...</p>
+}
+else
+{
+    <h4 class="mt-4">All orders</h4>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Id</th><th>Customer</th><th>Product</th><th>Qty</th><th>Unit</th><th>Disc %</th><th>Total</th><th>Status</th><th>Created (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in orders.OrderByDescending(x => x.Id))
+                {
+                    <tr>
+                        <td>@o.Id</td>
+                        <td>@o.CustomerId</td>
+                        <td>@o.ProductId</td>
+                        <td>@o.Quantity</td>
+                        <td>@o.UnitPrice.ToString("F2")</td>
+                        <td>@o.DiscountPercent.ToString("F0")</td>
+                        <td>@o.Total.ToString("F2")</td>
+                        <td>@o.Status</td>
+                        <td>@o.CreatedAt.ToString("u")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (orders.Count == 0)
+    {
+        <p class="text-muted">No orders yet.</p>
+    }
+}
+
+@code {
+    private List<OrderDto>? orders;
+    private string? loadError;
+    private string? saveError;
+    private readonly CreateOrderRequest newOrder = new() { Quantity = 1 };
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        loadError = null;
+        try
+        {
+            orders = await Api.GetOrdersAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            loadError = $"Unexpected JSON: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+    }
+
+    private async Task CreateOrderAsync()
+    {
+        saveError = null;
+        isSaving = true;
+        try
+        {
+            await Api.CreateOrderAsync(newOrder);
+            newOrder.CustomerId = 0;
+            newOrder.ProductId = 0;
+            newOrder.Quantity = 1;
+            newOrder.DiscountPercent = 0;
+            await ReloadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            saveError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            saveError = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

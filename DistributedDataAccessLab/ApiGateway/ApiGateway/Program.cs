@@ -23,14 +23,26 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => options.DocumentFilter<OcelotRoutesDocumentFilter>());
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(static origin =>
+            origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)
+            || origin.StartsWith("https://localhost:", StringComparison.OrdinalIgnoreCase)
+            || origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase)
+            || origin.StartsWith("https://127.0.0.1:", StringComparison.OrdinalIgnoreCase))
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
+app.UseCors();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Ocelot is terminal: if registered on the main pipeline after MapControllers, it still runs for every
-// request and returns 404 when no route matches — so /api/gateway/... (GatewayController BFF) never runs.
-// Only run Ocelot for paths that are actually proxied (ocelot.json uses /gateway/...).
 app.MapWhen(
     static ctx => ctx.Request.Path.StartsWithSegments("/gateway"),
     subApp => { subApp.UseOcelot().GetAwaiter().GetResult(); });

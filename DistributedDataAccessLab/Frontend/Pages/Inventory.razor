@@ -1,0 +1,215 @@
+@page "/inventory"
+@using Frontend.Models
+@using Frontend.Services
+@inject ApiService Api
+
+<PageTitle>Inventory</PageTitle>
+
+<h3>Inventory</h3>
+<p class="text-muted small">Gateway: <code>/gateway/inventory</code> (list, lookup, createOrUpdate, reserve, release)</p>
+
+@if (loadError is not null)
+{
+    <p class="text-danger" role="alert">@loadError</p>
+}
+else if (items == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h4 class="mt-3">All rows</h4>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead><tr><th>Row Id</th><th>Product Id</th><th>Stock</th></tr></thead>
+            <tbody>
+                @foreach (var row in items)
+                {
+                    <tr>
+                        <td>@row.Id</td>
+                        <td>@row.ProductId</td>
+                        <td>@row.Stock</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (items.Count == 0)
+    {
+        <p class="text-muted">No inventory rows. Use “Set stock” to create one for a product.</p>
+    }
+}
+
+<h4 class="mt-4">Lookup by product id</h4>
+<div class="row g-2 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Product id</label>
+        <InputNumber class="form-control" @bind-Value="lookupProductId" />
+    </div>
+    <div class="col-md-2">
+        <button type="button" class="btn btn-secondary" @onclick="LookupAsync" disabled="@isBusy">Lookup</button>
+    </div>
+</div>
+@if (lookupMessage is not null)
+{
+    <p class="mt-2 @(lookupOk ? "text-success" : "text-warning")">@lookupMessage</p>
+}
+
+<h4 class="mt-4">Set stock (create or replace)</h4>
+<p class="small text-muted">Calls POST <code>/gateway/inventory/createOrUpdate</code>. API requires quantity ≥ 1.</p>
+<EditForm Model="setStock" OnValidSubmit="SetStockAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Product id</label>
+            <InputNumber class="form-control" @bind-Value="setStock.ProductId" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">New stock level</label>
+            <InputNumber class="form-control" @bind-Value="setStock.Quantity" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary" disabled="@isBusy">Save</button>
+        </div>
+    </div>
+</EditForm>
+
+<h4 class="mt-4">Reserve / release</h4>
+<div class="row">
+    <div class="col-lg-6">
+        <EditForm Model="reserveModel" OnValidSubmit="ReserveAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row g-2">
+                <div class="col-6"><label class="form-label">Product id</label><InputNumber class="form-control" @bind-Value="reserveModel.ProductId" /></div>
+                <div class="col-6"><label class="form-label">Quantity</label><InputNumber class="form-control" @bind-Value="reserveModel.Quantity" /></div>
+            </div>
+            <button type="submit" class="btn btn-warning mt-2" disabled="@isBusy">Reserve</button>
+        </EditForm>
+    </div>
+    <div class="col-lg-6">
+        <EditForm Model="releaseModel" OnValidSubmit="ReleaseAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row g-2">
+                <div class="col-6"><label class="form-label">Product id</label><InputNumber class="form-control" @bind-Value="releaseModel.ProductId" /></div>
+                <div class="col-6"><label class="form-label">Quantity</label><InputNumber class="form-control" @bind-Value="releaseModel.Quantity" /></div>
+            </div>
+            <button type="submit" class="btn btn-info mt-2" disabled="@isBusy">Release</button>
+        </EditForm>
+    </div>
+</div>
+@if (actionError is not null)
+{
+    <p class="text-danger mt-3" role="alert">@actionError</p>
+}
+
+@code {
+    private List<InventoryItemDto>? items;
+    private string? loadError;
+    private string? actionError;
+    private string? lookupMessage;
+    private bool lookupOk;
+    private int lookupProductId = 1;
+    private readonly InventoryProductQuantityRequest setStock = new();
+    private readonly InventoryProductQuantityRequest reserveModel = new();
+    private readonly InventoryProductQuantityRequest releaseModel = new();
+    private bool isBusy;
+
+    protected override async Task OnInitializedAsync() => await ReloadListAsync();
+
+    private async Task ReloadListAsync()
+    {
+        loadError = null;
+        try
+        {
+            items = await Api.GetInventoryAsync();
+        }
+        catch (Exception ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+    }
+
+    private async Task LookupAsync()
+    {
+        actionError = null;
+        lookupMessage = null;
+        isBusy = true;
+        try
+        {
+            var row = await Api.GetInventoryByProductIdAsync(lookupProductId);
+            lookupOk = row is not null;
+            lookupMessage = row is null
+                ? $"No inventory row for product {lookupProductId}."
+                : $"Product {row.ProductId}: stock {row.Stock} (row id {row.Id}).";
+        }
+        catch (Exception ex)
+        {
+            lookupOk = false;
+            lookupMessage = PageErrorHelper.Describe(ex);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task SetStockAsync()
+    {
+        actionError = null;
+        isBusy = true;
+        try
+        {
+            await Api.SetInventoryAsync(setStock);
+            await ReloadListAsync();
+        }
+        catch (Exception ex)
+        {
+            actionError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ReserveAsync()
+    {
+        actionError = null;
+        isBusy = true;
+        try
+        {
+            await Api.ReserveInventoryAsync(reserveModel);
+            await ReloadListAsync();
+        }
+        catch (Exception ex)
+        {
+            actionError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ReleaseAsync()
+    {
+        actionError = null;
+        isBusy = true;
+        try
+        {
+            await Api.ReleaseInventoryAsync(releaseModel);
+            await ReloadListAsync();
+        }
+        catch (Exception ex)
+        {
+            actionError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

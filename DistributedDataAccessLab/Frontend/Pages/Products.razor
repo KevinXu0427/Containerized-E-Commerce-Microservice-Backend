@@ -1,0 +1,119 @@
+@page "/products"
+@using Frontend.Models
+@using Frontend.Services
+@inject ApiService Api
+
+<h3>Products</h3>
+<p class="text-muted small">Data comes from the API Gateway route <code>/gateway/products</code> (Product Service).</p>
+
+<h4 class="mt-4">Add product</h4>
+<EditForm Model="newProduct" OnValidSubmit="AddProductAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">Name</label>
+            <InputText class="form-control" @bind-Value="newProduct.Name" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Price</label>
+            <InputNumber class="form-control" @bind-Value="newProduct.Price" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">@(isSaving ? "Saving…" : "Add")</button>
+        </div>
+    </div>
+</EditForm>
+@if (saveError is not null)
+{
+    <p class="text-danger mt-2" role="alert">@saveError</p>
+}
+
+@if (loadError is not null)
+{
+    <p class="text-danger mt-4" role="alert">@loadError</p>
+}
+else if (products == null)
+{
+    <p class="mt-4">Loading...</p>
+}
+else if (products.Count == 0)
+{
+    <p class="mt-4">No products yet. Add one above.</p>
+}
+else
+{
+    <h4 class="mt-4">Catalog</h4>
+    <div class="row">
+        @foreach (var product in products)
+        {
+            <div class="col-md-4">
+                <div class="card p-2 m-2">
+                    <h5>@product.Name</h5>
+                    <p class="mb-0"><span class="text-muted">Id</span> @product.Id</p>
+                    <p class="mb-0">Price: $@product.Price.ToString("F2")</p>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ProductDto>? products;
+    private string? loadError;
+    private string? saveError;
+    private readonly CreateProductRequest newProduct = new();
+    private bool isSaving;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadProductsAsync();
+    }
+
+    private async Task ReloadProductsAsync()
+    {
+        loadError = null;
+        try
+        {
+            products = await Api.GetProductsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            loadError = $"Unexpected response from the product API: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            loadError = PageErrorHelper.Describe(ex);
+        }
+    }
+
+    private async Task AddProductAsync()
+    {
+        saveError = null;
+        isSaving = true;
+        try
+        {
+            await Api.CreateProductAsync(newProduct);
+            newProduct.Name = string.Empty;
+            newProduct.Price = 0;
+            await ReloadProductsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            saveError = $"{ex.Message} (is the gateway running and CORS enabled?)";
+        }
+        catch (Exception ex)
+        {
+            saveError = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

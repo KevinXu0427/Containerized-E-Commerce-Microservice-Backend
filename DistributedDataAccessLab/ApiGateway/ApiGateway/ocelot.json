@@ -19,7 +19,7 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "customerservice", "Port": 8080 }],
       "UpstreamPathTemplate": "/gateway/customers",
-      "UpstreamHttpMethod": [ "POST" ]
+      "UpstreamHttpMethod": [ "GET", "POST" ]
     },
     {
       "DownstreamPathTemplate": "/api/customers/{everything}",
@@ -41,6 +41,13 @@
       "DownstreamHostAndPorts": [{ "Host": "productservice", "Port": 8080 }],
       "UpstreamPathTemplate": "/gateway/products/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/inventory",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "inventoryservice", "Port": 8080 }],
+      "UpstreamPathTemplate": "/gateway/inventory",
+      "UpstreamHttpMethod": [ "GET" ]
     },
     {
       "DownstreamPathTemplate": "/api/inventory/{everything}",
